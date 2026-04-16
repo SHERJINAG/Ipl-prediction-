@@ -1,0 +1,6 @@
+{
+  "name": "IPL Predictor & Simulator",
+  "description": "A production-ready IPL match prediction and scorecard simulation system using machine learning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["ML Prediction", "Scorecard Simulation", "Real-time Data"]
+}

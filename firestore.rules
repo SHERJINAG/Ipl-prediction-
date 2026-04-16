@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: predictions
+    // Fields:
+    //   - userId: string (required) - The UID of the user
+    //   - team1: string (required)
+    //   - team2: string (required)
+    //   - winner: string (required)
+    //   - winProbability: map
+    //   - predictedScore: map
+    //   - keyInsights: list
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: matches
+    // Fields:
+    //   - match_id: string
+    //   - date: string
+    //   - team1: string
+    //   - team2: string
+    //   - winner: string
+    //   - team1_score: number
+    //   - team2_score: number
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "sherjinag@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidPrediction(data) {
+      return data.userId is string &&
+             data.team1 is string &&
+             data.team2 is string &&
+             data.winner is string &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /predictions/{predictionId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidPrediction(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}
